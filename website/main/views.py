@@ -1,12 +1,22 @@
 from django.shortcuts import render, redirect
 from .forms import RegisterForm, PostForm
 from django.contrib.auth import login as auth_login, logout, authenticate
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.decorators import login_required 
+from .models import Post
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm  
 
 @login_required(login_url="/login")
 def home(request):
-    return render(request, 'main/home.html')
+    posts = Post.objects.all()
+
+    if request.method == 'POST':
+        post_id = request.POST.get('post-id')
+        post = Post.objects.filter(id=post_id).first()
+        if post and post.author == request.user:
+            post.delete()
+
+
+    return render(request, 'main/home.html', {"posts": posts})
 
 @login_required(login_url="/login")
 def create_post(request):
