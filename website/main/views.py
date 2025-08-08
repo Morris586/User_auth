@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect
 from .forms import RegisterForm, PostForm
 from django.contrib.auth import login as auth_login, logout, authenticate
 from .models import Post
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm  
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.models import User, Group 
+from django.contrib.auth.forms import AuthenticationForm
 
 @login_required(login_url="/login")
 def home(request):
@@ -11,14 +12,35 @@ def home(request):
 
     if request.method == 'POST':
         post_id = request.POST.get('post-id')
-        post = Post.objects.filter(id=post_id).first()
-        if post and post.author == request.user:
-            post.delete()
+        user_id = request.POST.get("user-id")
+        
+        
+        if post_id:
+            post = Post.objects.filter(id=post_id).first()
+        
+            if post and post.author == request.user or request.user.has_perm("main.delete_post"):
+                post.delete()
+        elif user_id:
+            user = User.objects.filter(id=user_id).first()
+            if user and request.user.is_staff:
+                try:
+                
+                    group = Group.objects.filter(name='default')
+                    group.user_set.remove(user)
+                except:
+                    pass
+                try:
+                    group = Group.objects.filter(name='mod')
+                    group.user_set.add(user)
+                except:
+                    pass
+
 
 
     return render(request, 'main/home.html', {"posts": posts})
 
-@login_required(login_url="/login")
+@login_required(login_url="/login") # Ensures user is logged in to create a post
+@permission_required('main.add_post', login_url="/login", raise_exception=True)# Permission to create a post
 def create_post(request):
     if request.method == 'POST':
         form = PostForm(request.POST)
