@@ -25,12 +25,12 @@ def home(request):
             if user and request.user.is_staff:
                 try:
                 
-                    group = Group.objects.filter(name='default')
+                    group = Group.objects.get(name='default')
                     group.user_set.remove(user)
                 except:
                     pass
                 try:
-                    group = Group.objects.filter(name='mod')
+                    group = Group.objects.get(name='mod')
                     group.user_set.add(user)
                 except:
                     pass
